@@ -1,5 +1,6 @@
 import Utils
 from Bullet import Bullet
+import time
 
 
 class Game:
@@ -19,6 +20,21 @@ class Game:
         self.enemies = enemies
         self.enemy_locations = locations
         self.bullets = []
+        self.score_value = 0
+        self.text_w = 10
+        self.text_h = 10
+        self.score_font = pygame.font.Font('freesansbold.ttf', 32)
+        self.end_game_font = pygame.font.Font('freesansbold.ttf', 100)
+        self.end_game_massage = "Game Over, You "
+
+    def game_over(self, w, h, massage):
+        self.end_game_massage += massage
+        massage_rander = self.end_game_font.render(self.end_game_massage, True, (250, 250, 250))
+        self.screen.blit(massage_rander, (w, h))
+
+    def show_score(self, w, h):
+        score = self.score_font.render("Score: " + str(self.score_value), True, (250, 250, 250))
+        self.screen.blit(score, (w, h))
 
     def is_legal(self, x, y):
         return self.check_if_in_border(x, y)
@@ -61,6 +77,12 @@ class Game:
 
         for j in enemies_to_remove:
             self.enemies.pop(j)
+            self.score_value += 1
+
+    def enemies_hit(self):
+        for enemy in self.enemies:
+            if Utils.is_collision(enemy, self.player):
+                return True
 
     def run_loop(self):
         # RGB - Red, Green, Blue
@@ -83,8 +105,8 @@ class Game:
                 elif event.key == self.pygame.K_DOWN:
                     self.player.location_change_h = self.player.movementRate
                 elif event.key == self.pygame.K_SPACE:
-                    if self.player.try_to_shot(self.enemy_locations) is True:
-                        self.bullets.append(Bullet(self.pygame, self.player.loc_w, self.player.loc_h, 37, 0.5))
+                    if self.player.try_to_shot(self.bullets) is True:
+                        self.bullets.append(Bullet(self.pygame, self.player.loc_w, self.player.loc_h, 37, 1.2))
 
             if event.type == self.pygame.KEYUP:
                 if event.key == self.pygame.K_LEFT or event.key == self.pygame.K_RIGHT:
@@ -98,8 +120,20 @@ class Game:
             self.player.loc_h += self.player.location_change_h
 
         self.draw_player(self.player.loc_w, self.player.loc_h)
+
+        if self.enemies_hit() is True:
+            self.game_over(0, 0, "You Lose :(")
+            time.sleep(1)
+            return True
+
+        if len(self.enemies) == 0:
+            self.game_over(0, 0, "You Won :)")
+            time.sleep(1)
+            return True
+
         self.draw_enemies()
         self.draw_bullets()
         self.bullet_hit()
+        self.show_score(self.text_w, self.text_h)
         self.display.update()
         return False  # not quit the game

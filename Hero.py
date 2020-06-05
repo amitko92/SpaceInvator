@@ -12,6 +12,6 @@ class Player(Object):
         self.location_change_h = location_change_h
         self.can_shot = True
 
-    def try_to_shot(self, locations):
-        if self.can_shot is True:
+    def try_to_shot(self, bullets):  # can shot 5 bullets max.
+        if self.can_shot is True and len(bullets) < 5:
             return True
