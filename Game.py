@@ -69,13 +69,17 @@ class Game:
             self.screen.blit(self.enemies[index].image, (self.enemies[index].loc_w, self.enemies[index].loc_h))
 
     def draw_bullets(self):
+        for bullet in self.bullets:
+            self.screen.blit(bullet.image, (bullet.loc_w, bullet.loc_h))
+
+    def move_and_delete_bullets(self):
         index_to_remove = []
         for i in range(0, len(self.bullets)):
-            if self.bullets[i].loc_h - self.bullets[i].movement_rate > 0:
-                self.bullets[i].loc_h -= self.bullets[i].movement_rate
-                self.screen.blit(self.bullets[i].image, (self.bullets[i].loc_w, self.bullets[i].loc_h))
-            else:
+            self.bullets[i].calculate_move_row()
+            if self.bullets[i].pre_loc_h < 0:
                 index_to_remove.append(i)
+            else:
+                self.bullets[i].set_H()
         for index in index_to_remove:
             self.bullets.pop(index)
 
@@ -98,11 +102,6 @@ class Game:
             self.enemies.pop(index)
             self.score_value += 1
 
-    def enemies_hit(self):
-        for index in self.enemies:
-            if Utils.is_collision(self.enemies[index], self.player):
-                return True
-
     def init_enemies(self):
         # init the enemies
         for i in range(0, 4):
@@ -114,6 +113,42 @@ class Game:
                 return True
         return False
 
+    def handle_keyboard_down_event(self, event):
+        if event.key == self.pygame.K_LEFT:
+            self.player.direction_w = -1
+            self.player.direction_h = 0
+            self.player.is_moving = True
+        elif event.key == self.pygame.K_RIGHT:
+            self.player.direction_w = 1
+            self.player.direction_h = 0
+            self.player.is_moving = True
+        elif event.key == self.pygame.K_UP:
+            self.player.direction_h = -1
+            self.player.direction_w = 0
+            self.player.is_moving = True
+        elif event.key == self.pygame.K_DOWN:
+            self.player.direction_h = 1
+            self.player.direction_w = 0
+            self.player.is_moving = True
+        elif event.key == self.pygame.K_SPACE:
+            if self.player.try_to_shot(self.bullets) is True:
+                self.bullets.append(
+                    self.enemy_factory.create_bullet("bullet_1", self.player.loc_w, self.player.loc_h))
+
+    def handle_keyboard_up_event(self, event):
+        if event.key == self.pygame.K_LEFT or event.key == self.pygame.K_RIGHT:
+            self.player.is_moving = False
+        if event.key == self.pygame.K_UP or event.key == self.pygame.K_DOWN:
+            self.player.is_moving = False
+
+    def move_player(self):
+        self.player.calculate_move_row()
+        self.player.calculate_move_col()
+
+        if self.is_legal(self.player.pre_loc_w, self.player.pre_loc_h):
+            self.player.set_W()
+            self.player.set_H()
+
     def run_loop(self):
         # RGB - Red, Green, Blue
         self.screen.fill((0, 0, 0))
@@ -121,34 +156,15 @@ class Game:
         self.screen.blit(self.background_img, (0, 0))
 
         for event in self.pygame.event.get():
-
             if event.type == self.pygame.QUIT:
                 return True
-
             if event.type == self.pygame.KEYDOWN:
-                if event.key == self.pygame.K_LEFT:
-                    self.player.location_change_w = - self.player.movement_rate
-                elif event.key == self.pygame.K_RIGHT:
-                    self.player.location_change_w = self.player.movement_rate
-                elif event.key == self.pygame.K_UP:
-                    self.player.location_change_h = - self.player.movement_rate
-                elif event.key == self.pygame.K_DOWN:
-                    self.player.location_change_h = self.player.movement_rate
-                elif event.key == self.pygame.K_SPACE:
-                    if self.player.try_to_shot(self.bullets) is True:
-                        self.bullets.append(
-                            self.enemy_factory.create_bullet("bullet_1", self.player.loc_w, self.player.loc_h))
-
+                self.handle_keyboard_down_event(event)
             if event.type == self.pygame.KEYUP:
-                if event.key == self.pygame.K_LEFT or event.key == self.pygame.K_RIGHT:
-                    self.player.location_change_w = 0
-                if event.key == self.pygame.K_UP or event.key == self.pygame.K_DOWN:
-                    self.player.location_change_h = 0
+                self.handle_keyboard_up_event(event)
 
-        if self.is_legal(self.player.loc_w + self.player.location_change_w,
-                         self.player.loc_h + self.player.location_change_h):
-            self.player.loc_w += self.player.location_change_w
-            self.player.loc_h += self.player.location_change_h
+        if self.player.is_moving:
+            self.move_player()
 
         self.draw_player(self.player.loc_w, self.player.loc_h)
 
@@ -156,6 +172,7 @@ class Game:
             return True
 
         self.move_and_draw_enemies()
+        self.move_and_delete_bullets()
         self.draw_bullets()
         self.bullet_hit()
         self.show_score(self.text_w, self.text_h)
