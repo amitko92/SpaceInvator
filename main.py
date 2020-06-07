@@ -1,27 +1,27 @@
 import pygame
-import time
-
-from Enemy import Enemy
 from Game import Game
 from Hero import Player
+from Enemy_factory import Factory
 
 # initialize the pygame app.
 pygame.init()
 
-player = Player(pygame, r'..\images\hero.png', 370, 480, 37, 2, 0, 0)
-enemies = []
-locations = []
+player = Player(370, 480, 37, 2, pygame.image.load('hero.png'), 0, 0)
 
-for i in range(0, 4):
-    enemies.append(Enemy(pygame, r'..\images\space_enemy.png', 120 + 150 * i, 70, 37, 0.7, i))
-    locations.append((120 + 150 * i, 70, i))
-    #  print("loc: " + str(120 + 150*i) + "index " + str(i))
+images = {"enemy - regular": pygame.image.load('space_enemy.png'),
+          "bullet_1": pygame.image.load('bullet_2.png')}
 
-game = Game(pygame, "Space Invader", r'..\images\background_1.jpg', 800, 600, r'..\images\icon.png', player, enemies,
-            locations)
+movement_rate = {"enemy - regular": 0.7,
+                 'bullet_1': 1.2}
+
+rs = {"enemy - regular": 31,
+      'bullet_1': 20}
+
+factory = Factory(images, movement_rate, rs)
+
+game = Game(pygame, "Space Invader", 'background_1.jpg', 800, 600, 'icon.png', player, factory)
 
 # the game loop.
 running = True
 while running:
     running = not (game.run_loop())
-

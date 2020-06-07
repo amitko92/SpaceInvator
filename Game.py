@@ -1,11 +1,10 @@
 import Utils
-from Bullet import Bullet
 import time
 
 
 class Game:
 
-    def __init__(self, pygame, title, background_img, width, height, icon_url, player, enemies, locations):
+    def __init__(self, pygame, title, background_img, width, height, icon_url, player, factory):
         self.pygame = pygame
         self.title = title
         self.pygame.display.set_caption(self.title)
@@ -17,8 +16,8 @@ class Game:
         self.icon = icon_url
         self.pygame.display.set_icon(self.pygame.image.load(self.icon))
         self.player = player
-        self.enemies = enemies
-        self.enemy_locations = locations
+        self.enemies = {}
+        self.enemies_counter = 0
         self.bullets = []
         self.score_value = 0
         self.text_w = 10
@@ -26,6 +25,9 @@ class Game:
         self.score_font = pygame.font.Font('freesansbold.ttf', 32)
         self.end_game_font = pygame.font.Font('freesansbold.ttf', 100)
         self.end_game_massage = "Game Over, You "
+        self.enemy_factory = factory
+
+        self.init_enemies()
 
     def game_over(self, w, h, massage):
         self.end_game_massage += massage
@@ -46,19 +48,37 @@ class Game:
         if self.is_legal(x, y):
             self.player.loc_w = x
             self.player.loc_h = y
-        self.screen.blit(self.player.playerImg, (self.player.loc_w, self.player.loc_h))
+        self.screen.blit(self.player.image, (self.player.loc_w, self.player.loc_h))
+
+    def move_enemies(self):
+        for index in self.enemies:
+            flag = False
+            self.enemies[index].calculate_move_col()
+            if self.enemies[index].pre_loc_w < 0 or self.enemies[index].pre_loc_w > 738:
+                self.enemies[index].calculate_move_row()
+                self.enemies[index].set_H()  # right now I don't check if move is legal.
+            else:
+                for other_enemy_index in self.enemies:
+                    if not (self.enemies[other_enemy_index].index == self.enemies[index].index):
+                        if Utils.is_collision(self.enemies[index], self.enemies[other_enemy_index]):
+                            self.enemies[index].dir_moving *= -1
+                            self.enemies[index].calculate_move_col()
+                self.enemies[index].set_W()
 
     def draw_enemies(self):
-        for enemy in self.enemies:
-            enemy.move(self.enemy_locations)
-            self.screen.blit(enemy.img, (enemy.loc_w, enemy.loc_h))
+        for index in self.enemies:
+            self.screen.blit(self.enemies[index].image, (self.enemies[index].loc_w, self.enemies[index].loc_h))
+
+    def move_and_draw_enemies(self):
+        self.move_enemies()
+        self.draw_enemies()
 
     def draw_bullets(self):
         index_to_remove = []
         for i in range(0, len(self.bullets)):
             if self.bullets[i].loc_h - self.bullets[i].movement_rate > 0:
                 self.bullets[i].loc_h -= self.bullets[i].movement_rate
-                self.screen.blit(self.bullets[i].bullet_img, (self.bullets[i].loc_w, self.bullets[i].loc_h))
+                self.screen.blit(self.bullets[i].image, (self.bullets[i].loc_w, self.bullets[i].loc_h))
             else:
                 index_to_remove.append(i)
         for index in index_to_remove:
@@ -68,21 +88,26 @@ class Game:
         bullet_to_remove = []
         enemies_to_remove = []
         for i in range(0, len(self.bullets)):
-            for j in range(0, len(self.enemies)):
-                if Utils.is_collision(self.bullets[i], self.enemies[j]):
+            for index in self.enemies:
+                if Utils.is_collision(self.bullets[i], self.enemies[index]):
                     bullet_to_remove.append(i)
-                    enemies_to_remove.append(j)
+                    enemies_to_remove.append(index)
         for i in bullet_to_remove:
             self.bullets.pop(i)
 
-        for j in enemies_to_remove:
-            self.enemies.pop(j)
+        for index in enemies_to_remove:
+            self.enemies.pop(index)
             self.score_value += 1
 
     def enemies_hit(self):
-        for enemy in self.enemies:
-            if Utils.is_collision(enemy, self.player):
+        for index in self.enemies:
+            if Utils.is_collision(self.enemies[index], self.player):
                 return True
+
+    def init_enemies(self):
+        # init the enemies
+        for i in range(0, 4):
+            self.enemies[i] = self.enemy_factory.create_enemy("enemy - regular", 120 + 150 * i, 70, i)
 
     def run_loop(self):
         # RGB - Red, Green, Blue
@@ -97,16 +122,17 @@ class Game:
 
             if event.type == self.pygame.KEYDOWN:
                 if event.key == self.pygame.K_LEFT:
-                    self.player.location_change_w = - self.player.movementRate
+                    self.player.location_change_w = - self.player.movement_rate
                 elif event.key == self.pygame.K_RIGHT:
-                    self.player.location_change_w = self.player.movementRate
+                    self.player.location_change_w = self.player.movement_rate
                 elif event.key == self.pygame.K_UP:
-                    self.player.location_change_h = - self.player.movementRate
+                    self.player.location_change_h = - self.player.movement_rate
                 elif event.key == self.pygame.K_DOWN:
-                    self.player.location_change_h = self.player.movementRate
+                    self.player.location_change_h = self.player.movement_rate
                 elif event.key == self.pygame.K_SPACE:
                     if self.player.try_to_shot(self.bullets) is True:
-                        self.bullets.append(Bullet(self.pygame, self.player.loc_w, self.player.loc_h, 37, 1.2))
+                        self.bullets.append(
+                            self.enemy_factory.create_bullet("bullet_1", self.player.loc_w, self.player.loc_h))
 
             if event.type == self.pygame.KEYUP:
                 if event.key == self.pygame.K_LEFT or event.key == self.pygame.K_RIGHT:
@@ -121,17 +147,7 @@ class Game:
 
         self.draw_player(self.player.loc_w, self.player.loc_h)
 
-        if self.enemies_hit() is True:
-            self.game_over(0, 0, "You Lose :(")
-            time.sleep(1)
-            return True
-
-        if len(self.enemies) == 0:
-            self.game_over(0, 0, "You Won :)")
-            time.sleep(1)
-            return True
-
-        self.draw_enemies()
+        self.move_and_draw_enemies()
         self.draw_bullets()
         self.bullet_hit()
         self.show_score(self.text_w, self.text_h)
