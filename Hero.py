@@ -1,7 +1,7 @@
-from Object import Object
+from Character import Character
 
 
-class Player(Object):
+class Player(Character):
 
     def __init__(self, width, height, r, movement_rate_w, movement_rate_h, player_img):
         super().__init__(width, height, r, movement_rate_w, movement_rate_h, player_img)

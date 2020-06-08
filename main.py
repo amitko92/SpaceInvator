@@ -9,4 +9,5 @@ game = Game(pygame, "Space Invader", 'background_1.jpg', 800, 600, 'icon.png', _
 # the game loop.
 running = True
 while running:
+
     running = not (game.run_loop())

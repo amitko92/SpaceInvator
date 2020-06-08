@@ -24,8 +24,21 @@ class Game:
         self.text_h = 10
         self.score_font = pygame.font.Font('freesansbold.ttf', 32)
         self.enemy_factory = factory
+        self.clock = clock = pygame.time.Clock()
 
         self.init_enemies()
+
+    def massage_display(self, massage, size, w, h):
+        text = self.pygame.font.Font('freesansbold.ttf', size)
+        TextSurf, TextRect = self.text_objects(massage, text)
+        TextRect.center = ((w), (h))
+        self.screen.blit(TextSurf, TextRect)
+        self.display.update()
+
+    def text_objects(self, massage, font):
+        textSurface = font.render(massage, True, (0, 0, 0))
+        return textSurface, textSurface.get_rect()
+        print(Utils.color_map.get("black"))
 
     def game_over(self, w, h, massage):
         self.end_game_massage += massage
@@ -149,6 +162,19 @@ class Game:
             self.player.set_W()
             self.player.set_H()
 
+    def game_intro(self):
+
+        intro = True
+
+        while intro:
+            for event in self.pygame.event.get():
+                if event.type == self.pygame.QUIT:
+                    return True
+
+            self.screen.fill((255, 255, 255))
+            self.massage_display(massage="SpaceInvader", size=100, w=self.width / 2, h=(self.height / 2 - 100))
+            self.pygame.display.update()
+
     def run_loop(self):
         # RGB - Red, Green, Blue
         self.screen.fill((0, 0, 0))
@@ -177,4 +203,5 @@ class Game:
         self.bullet_hit()
         self.show_score(self.text_w, self.text_h)
         self.display.update()
+        self.clock.tick(60)
         return False  # not quit the game
