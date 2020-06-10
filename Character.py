@@ -15,12 +15,15 @@ class Character:
         self.pre_loc_h = 0
         self.direction_w = 1
         self.direction_h = 1
+        self.is_collide = False
 
     def set_W(self):
         self.loc_w = self.pre_loc_w
+        self.rect = pygame.Rect(self.loc_w, self.loc_h, self.size_w, self.size_h)
 
     def set_H(self):
         self.loc_h = self.pre_loc_h
+        self.rect = pygame.Rect(self.loc_w, self.loc_h, self.size_w, self.size_h)
 
     def calculate_move_row(self):
         self.pre_loc_h = self.loc_h + self.direction_h * self.movement_rate_h

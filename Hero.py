@@ -3,8 +3,8 @@ from Character import Character
 
 class Player(Character):
 
-    def __init__(self, width, height, r, movement_rate_w, movement_rate_h, player_img):
-        super().__init__(width, height, r, movement_rate_w, movement_rate_h, player_img)
+    def __init__(self, location_w, location_h, movement_rate_w, movement_rate_h, img, size_w, size_h):
+        super().__init__(location_w, location_h, movement_rate_w, movement_rate_h, img, size_w, size_h)
         self.can_shot = True
         self.is_moving = False
 

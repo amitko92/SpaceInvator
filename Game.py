@@ -25,20 +25,26 @@ class Game:
         self.score_font = pygame.font.Font('freesansbold.ttf', 32)
         self.enemy_factory = factory
         self.clock = clock = pygame.time.Clock()
+        self.color_map = {
+            'black': (0, 0, 0),
+            'white': (255, 255, 255),
+            'green': (255, 0, 0),
+            'gray': (128, 128, 128),
+            'slate gray': (112, 124, 144)
+        }
 
         self.init_enemies()
 
-    def massage_display(self, massage, size, w, h):
+    def massage_display(self, massage, size, w, h, font_color):
         text = self.pygame.font.Font('freesansbold.ttf', size)
-        TextSurf, TextRect = self.text_objects(massage, text)
+        TextSurf, TextRect = self.text_objects(massage, text, font_color)
         TextRect.center = ((w), (h))
         self.screen.blit(TextSurf, TextRect)
         self.display.update()
 
-    def text_objects(self, massage, font):
-        textSurface = font.render(massage, True, (0, 0, 0))
+    def text_objects(self, massage, font, font_color):
+        textSurface = font.render(massage, True, self.color_map.get(font_color))
         return textSurface, textSurface.get_rect()
-        print(Utils.color_map.get("black"))
 
     def game_over(self, w, h, massage):
         self.end_game_massage += massage
@@ -64,10 +70,10 @@ class Game:
                 self.enemies[index].set_H()  # right now I don't check if move is legal.
             else:
                 for other_enemy_index in self.enemies:
-                    if not (self.enemies[other_enemy_index].index == self.enemies[index].index):
-                        if Utils.is_collision(self.enemies[index], self.enemies[other_enemy_index]):
-                            self.enemies[index].dir_moving *= -1
-                            self.enemies[index].calculate_move_col()
+                    if self.enemies[index].rect.colliderect(self.enemies[other_enemy_index].rect) and self.enemies[
+                        index].index != self.enemies[other_enemy_index].index:
+                        self.enemies[index].change_direction_w()
+                        self.enemies[index].calculate_move_col()
                 self.enemies[index].set_W()
 
     # draw functions
@@ -101,19 +107,15 @@ class Game:
         self.draw_enemies()
 
     def bullet_hit(self):
-        bullet_to_remove = []
-        enemies_to_remove = []
         for i in range(0, len(self.bullets)):
             for index in self.enemies:
-                if Utils.is_collision(self.bullets[i], self.enemies[index]):
-                    bullet_to_remove.append(i)
-                    enemies_to_remove.append(index)
-        for i in bullet_to_remove:
-            self.bullets.pop(i)
+                if self.bullets[i].rect.colliderect(self.enemies[index].rect):
+                    self.bullets[i].is_collide = True
+                    self.enemies[index].is_collide = True
+                    self.score_value += 1
 
-        for index in enemies_to_remove:
-            self.enemies.pop(index)
-            self.score_value += 1
+        self.bullets = list(filter(lambda bullet: bullet.is_collide is False, self.bullets))
+        self.enemies = dict(filter(lambda element: element[1].is_collide is False, self.enemies.items()))
 
     def init_enemies(self):
         # init the enemies
@@ -122,7 +124,7 @@ class Game:
 
     def enemy_hit_the_player(self):
         for index_enemy in self.enemies:
-            if Utils.is_collision(self.player, self.enemies[index_enemy]):
+            if self.player.rect.colliderect(self.enemies[index_enemy].rect):
                 return True
         return False
 
@@ -195,6 +197,13 @@ class Game:
         self.draw_player(self.player.loc_w, self.player.loc_h)
 
         if self.enemy_hit_the_player():
+            self.massage_display("you lose :(", 50, 300, 200, 'white')
+            time.sleep(1)
+            return True
+
+        if len(self.enemies) is 0:
+            self.massage_display("you won :)", 50, 300, 200, 'white')
+            time.sleep(1)
             return True
 
         self.move_and_draw_enemies()
