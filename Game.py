@@ -24,7 +24,7 @@ class Game:
         self.text_h = 10
         self.score_font = pygame.font.Font('freesansbold.ttf', 32)
         self.enemy_factory = factory
-        self.clock = clock = pygame.time.Clock()
+        self.clock = pygame.time.Clock()
         self.color_map = {
             'black': (0, 0, 0),
             'white': (255, 255, 255),
@@ -178,8 +178,6 @@ class Game:
             self.pygame.display.update()
 
     def run_loop(self):
-        # RGB - Red, Green, Blue
-        self.screen.fill((0, 0, 0))
 
         self.screen.blit(self.background_img, (0, 0))
 
